@@ -1,0 +1,104 @@
+module Tests where
+
+import Daml.Script
+import qualified User as U
+
+-- Allocate common parties
+setupParties : Script (Party, Party, Party)
+setupParties = do
+  alice <- allocateParty "Alice"
+  bob <- allocateParty "Bob"
+  carol <- allocateParty "Carol"
+  pure (alice, bob, carol)
+
+-- Happy path: follow and send message when mutual following
+test_follow_and_message : Script ()
+test_follow_and_message = do
+  (alice, bob, _) <- setupParties
+
+  -- Create User contracts
+  aliceUserCid <- submit alice do createCmd U.User with username = alice, following = []
+  bobUserCid   <- submit bob   do createCmd U.User with username = bob,   following = []
+
+  -- Alice follows Bob
+  aliceUserCid' <- submit alice do exerciseCmd aliceUserCid U.Follow with userToFollow = bob
+
+  -- Bob follows Alice (mutual)
+  bobUserCid' <- submit bob do exerciseCmd bobUserCid U.Follow with userToFollow = alice
+
+  -- Bob can send message to Alice (controller is sender)
+  _msgCid <- submit bob do exerciseCmd aliceUserCid' U.SendMessage with sender = bob, content = "Hi Alice"
+  pure ()
+
+-- Error: cannot follow self
+test_follow_self_forbidden : Script ()
+test_follow_self_forbidden = do
+  (alice, _, _) <- setupParties
+  aliceUserCid <- submit alice do createCmd U.User with username = alice, following = []
+  submitMustFail alice do exerciseCmd aliceUserCid U.Follow with userToFollow = alice
+  pure ()
+
+-- Error: cannot follow same user twice
+test_follow_duplicate_forbidden : Script ()
+test_follow_duplicate_forbidden = do
+  (alice, bob, _) <- setupParties
+  aliceUserCid <- submit alice do createCmd U.User with username = alice, following = []
+  submit alice do exerciseCmd aliceUserCid U.Follow with userToFollow = bob
+  submitMustFail alice do exerciseCmd aliceUserCid U.Follow with userToFollow = bob
+  pure ()
+
+-- Error: cannot send message unless receiver follows sender back
+test_message_requires_receiver_follows_sender : Script ()
+test_message_requires_receiver_follows_sender = do
+  (alice, bob, _) <- setupParties
+  aliceUserCid <- submit alice do createCmd U.User with username = alice, following = []
+  bobUserCid   <- submit bob   do createCmd U.User with username = bob,   following = []
+
+  -- Initially, Alice does not follow Bob -> Bob cannot send to Alice
+  submitMustFail bob do exerciseCmd aliceUserCid U.SendMessage with sender = bob, content = "Hello"
+
+  -- Alice follows Bob (receiver follows sender) -> Bob can send to Alice
+  aliceUserCid' <- submit alice do exerciseCmd aliceUserCid U.Follow with userToFollow = bob
+
+  -- Bob attempts to send to Alice now succeeds without Bob following back
+  _ <- submit bob do exerciseCmd aliceUserCid' U.SendMessage with sender = bob, content = "Hello"
+
+  -- After Bob follows back, sending still succeeds (optional extra check)
+  _bobUserCid' <- submit bob do exerciseCmd bobUserCid U.Follow with userToFollow = alice
+  _ <- submit bob do exerciseCmd aliceUserCid' U.SendMessage with sender = bob, content = "Hello again"
+  pure ()
+
+-- Alias template behavior and key uniqueness
+test_alias_change_and_key : Script ()
+test_alias_change_and_key = do
+  (alice, _, public) <- setupParties
+
+  -- Create alias visible to a public observer
+  aliasCid <- submit alice do createCmd U.Alias with username = alice, alias = "a1", public = public
+
+  -- Change alias value creates new contract, archives old
+  aliasCid2 <- submit alice do exerciseCmd aliasCid U.Change with newAlias = "a2"
+
+  -- Cannot create another alias with same (username, public) key
+  submitMustFail alice do createCmd U.Alias with username = alice, alias = "dup", public = public
+
+  -- But can create alias for a different public party
+  -- Create a new observer party for uniqueness check
+  other <- allocateParty "Other"
+  _ <- submit alice do createCmd U.Alias with username = alice, alias = "a3", public = other
+
+  -- Archive the latest alias to avoid dangling actives (optional)
+  submit alice do archiveCmd aliasCid2
+  pure ()
+
+-- A main that runs all tests for daml test discovery
+main : Script ()
+main = do
+  test_follow_and_message
+  test_follow_self_forbidden
+  test_follow_duplicate_forbidden
+  test_message_requires_receiver_follows_sender
+  test_alias_change_and_key
+  pure ()
+
+

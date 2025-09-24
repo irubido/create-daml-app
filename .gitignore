@@ -1,0 +1,36 @@
+# General
+.DS_Store
+*.log
+*.log.*
+*.tmp
+*.swp
+*.swo
+
+# IDEs and editors
+.vscode/
+.idea/
+*.iml
+
+# Daml/Build artifacts
+.daml/
+.bazel-*
+
+# UI artifacts
+ui/node_modules/
+ui/.env
+ui/.env.local
+ui/.env.*.local
+ui/.cache/
+ui/build/
+ui/dist/
+ui/.parcel-cache/
+ui/.next/
+ui/.turbo/
+ui/npm-debug.log*
+ui/yarn-error.log*
+ui/pnpm-debug.log*
+
+# Logs in repo
+log/*.log
+log/*.log.*
+log/*.gz
