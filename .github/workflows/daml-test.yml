@@ -27,7 +27,6 @@ jobs:
       - name: Verify Daml installation
         run: |
           daml version
-          daml --version
 
       - name: Run Daml tests
         run: daml test
