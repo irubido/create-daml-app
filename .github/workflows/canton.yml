@@ -3,7 +3,7 @@ name: Canton CI
 on: [push, pull_request]
 
 jobs:
-  canton-runner:
+  canton-open-source:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -19,7 +19,7 @@ jobs:
           sudo apt update
           sudo apt install -y unzip curl
 
-      - name: Download Canton Open Source 2.10.2
+      - name: Download Canton Open Source
         run: |
           curl -L https://github.com/digital-asset/daml/releases/download/v2.10.2/canton-open-source-2.10.2.tar.gz -o canton-open-source.tar.gz
           tar -xzf canton-open-source.tar.gz
@@ -35,10 +35,8 @@ jobs:
         run: sleep 20
 
       - name: Test Ping participant1 from participant2
-        run: >
-          canton-open-source-2.10.2/bin/canton 
-            -c canton-open-source-2.10.2/examples/01-simple-topology/simple-topology.conf 
-            --command "participant2.health.ping(participant1)"
+        shell: bash
+        run: ./canton-open-source-2.10.2/bin/canton -c ./canton-open-source-2.10.2/examples/01-simple-topology/simple-topology.conf --command "participant2.health.ping(participant1)"
 
       - name: Cleanup
         run: kill $(jobs -p) || true
