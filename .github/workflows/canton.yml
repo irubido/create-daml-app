@@ -33,9 +33,7 @@ jobs:
 
       - name: Start Canton simple topology example with logs
         run: |
-          ./canton-open-source-2.10.2/bin/canton \
-            -c ./canton-open-source-2.10.2/examples/01-simple-topology/simple-topology.conf \
-            --bootstrap ./canton-open-source-2.10.2/examples/01-simple-topology/simple-ping.canton > canton.log 2>&1 &
+          ./canton-open-source-2.10.2/bin/canton -c ./canton-open-source-2.10.2/examples/01-simple-topology/simple-topology.conf --bootstrap ./.github/workflows/simple-ping.canton > canton.log 2>&1 &
           sleep 20
           cat canton.log
 
