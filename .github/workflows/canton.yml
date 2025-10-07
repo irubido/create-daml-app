@@ -29,17 +29,10 @@ jobs:
 
       - name: Start Canton simple topology example
         shell: bash
-        run: ./canton-open-source-2.10.2/bin/canton -c ./canton-open-source-2.10.2/examples/01-simple-topology/simple-topology.conf --bootstrap ./canton-open-source-2.10.2/examples/01-simple-topology/simple-ping.canton &
+        run: ./canton-open-source-2.10.2/bin/canton -c ./canton-open-source-2.10.2/examples/01-simple-topology/simple-topology.conf --bootstrap ./canton-open-source-2.10.2/examples/01-simple-topology/simple-ping.canton
 
       - name: Wait for Canton to start
         run: sleep 20
-
-      - name: Run health.status (here-doc)
-        run: |
-          ./canton-open-source-2.10.2/bin/canton -c ./canton-open-source-2.10.2/examples/01-simple-topology/simple-topology.conf << EOF
-          nodes.local.start()
-          health.status
-          EOF
 
       - name: Cleanup
         run: kill $(jobs -p) || true
