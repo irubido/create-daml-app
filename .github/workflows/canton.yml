@@ -9,7 +9,7 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Setup Java 11 (Temurin 11)
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '11'
@@ -32,8 +32,6 @@ jobs:
           canton-open-source-2.10.2/bin/canton 
             -c canton-open-source-2.10.2/examples/01-simple-topology/simple-topology.conf
             --bootstrap canton-open-source-2.10.2/examples/01-simple-topology/simple-ping.canton &
-        env:
-          JAVA_HOME: /usr/lib/jvm/java-11-openjdk-amd64
 
       - name: Wait for Canton to start
         run: sleep 20
