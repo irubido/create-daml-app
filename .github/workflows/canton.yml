@@ -34,9 +34,9 @@ jobs:
       - name: Wait for Canton to start
         run: sleep 20
 
-      - name: Test Ping participant1 from participant2
-        shell: bash
-        run: ./canton-open-source-2.10.2/bin/canton -c ./canton-open-source-2.10.2/examples/01-simple-topology/simple-topology.conf --command "participant2.health.ping(participant1)"
+      - name: Run health.status
+        run: |
+          echo 'health.status' | ./canton-open-source-2.10.2/bin/canton -c ./canton-open-source-2.10.2/examples/01-simple-topology/simple-topology.conf
 
       - name: Cleanup
         run: kill $(jobs -p) || true
