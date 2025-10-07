@@ -34,9 +34,12 @@ jobs:
       - name: Wait for Canton to start
         run: sleep 20
 
-      - name: Run health.status
+      - name: Run health.status (here-doc)
         run: |
-          echo 'health.status' | ./canton-open-source-2.10.2/bin/canton -c ./canton-open-source-2.10.2/examples/01-simple-topology/simple-topology.conf
+          ./canton-open-source-2.10.2/bin/canton -c ./canton-open-source-2.10.2/examples/01-simple-topology/simple-topology.conf << EOF
+          nodes.local.start()
+          health.status
+          EOF
 
       - name: Cleanup
         run: kill $(jobs -p) || true
