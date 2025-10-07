@@ -1,0 +1,48 @@
+name: Canton CI
+
+on: [push, pull_request]
+
+jobs:
+  canton-runner:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Java 11 (Temurin 11)
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y unzip curl
+
+      - name: Download Canton Open Source 2.10.2
+        run: |
+          curl -L https://github.com/digital-asset/daml/releases/download/v2.10.2/canton-open-source-2.10.2.tar.gz -o canton-open-source.tar.gz
+          tar -xzf canton-open-source.tar.gz
+
+      - name: Make Canton executable
+        run: chmod +x canton-open-source-2.10.2/bin/canton
+
+      - name: Start Canton simple topology example
+        run: >
+          canton-open-source-2.10.2/bin/canton 
+            -c canton-open-source-2.10.2/examples/01-simple-topology/simple-topology.conf
+            --bootstrap canton-open-source-2.10.2/examples/01-simple-topology/simple-ping.canton &
+        env:
+          JAVA_HOME: /usr/lib/jvm/java-11-openjdk-amd64
+
+      - name: Wait for Canton to start
+        run: sleep 20
+
+      - name: Test Ping participant1 from participant2
+        run: >
+          canton-open-source-2.10.2/bin/canton 
+            -c canton-open-source-2.10.2/examples/01-simple-topology/simple-topology.conf 
+            --command "participant2.health.ping(participant1)"
+
+      - name: Cleanup
+        run: kill $(jobs -p) || true
