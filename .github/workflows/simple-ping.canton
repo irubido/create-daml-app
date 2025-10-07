@@ -37,3 +37,5 @@ val ping: Long = participant2.health.ping(participant1)
 
 // Print ping
 println(s"Ping between participant2 and participant1: $ping ms")
+Console.flush()
+
