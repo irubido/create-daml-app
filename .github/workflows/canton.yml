@@ -27,6 +27,10 @@ jobs:
       - name: Make Canton executable
         run: chmod +x canton-open-source-2.10.2/bin/canton
 
+      - name: Start Canton simple topology example
+        shell: bash
+        run: ./canton-open-source-2.10.2/bin/canton -c ./canton-open-source-2.10.2/examples/01-simple-topology/simple-topology.conf --bootstrap ./canton-open-source-2.10.2/examples/01-simple-topology/simple-ping.canton &
+
       - name: Start Canton sandbox with JSON Ledger API
         shell: bash
         run: ./canton-open-source-2.10.2/bin/canton sandbox --json-api-port 7575 &
