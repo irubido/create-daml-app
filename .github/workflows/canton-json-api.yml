@@ -1,0 +1,62 @@
+name: Canton JSON API CI
+
+on: [push, pull_request]
+
+jobs:
+  canton-json-api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Java 11 (Temurin 11)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y unzip curl
+
+      - name: Download Canton Open Source
+        run: |
+          curl -L https://github.com/digital-asset/daml/releases/download/v2.10.2/canton-open-source-2.10.2.tar.gz -o canton-open-source.tar.gz
+          tar -xzf canton-open-source.tar.gz
+
+      - name: Build example Daml model
+        run: |
+          curl -sSL https://get.daml.com/ | sh
+          export PATH="$PATH:$HOME/.daml/bin"
+          daml new json-tests --template=create-daml-app
+          cd json-tests
+          daml build
+          cd ..
+          cp json-tests/.daml/dist/json-tests-0.0.1.dar canton-open-source-2.10.2/
+
+      - name: Start Canton with JSON Ledger API (background)
+        run: |
+          ./canton-open-source-2.10.2/bin/canton sandbox --json-api-port 7575 --dar canton-open-source-2.10.2/json-tests-0.0.1.dar > canton.log 2>&1 &
+          echo $! > canton.pid
+          sleep 20
+
+      - name: Check Canton OpenAPI docs endpoint
+        run: |
+          # This command pings the /docs/openapi endpoint and prints the first lines as proof of service
+          set -e
+          for i in {1..5}; do
+            if curl -sf localhost:7575/docs/openapi > openapi.yaml; then
+              break
+            fi
+            echo "Ledger API not yet ready, retrying..."
+            sleep 5
+          done
+          head -20 openapi.yaml
+          grep -q '^openapi: ' openapi.yaml
+          echo "Canton JSON Ledger API is up and serving OpenAPI docs!"
+
+      - name: Cleanup Canton
+        run: |
+          if test -f canton.pid; then
+            kill $(cat canton.pid) || true
+          fi
