@@ -27,9 +27,33 @@ jobs:
       - name: Make Canton executable
         run: chmod +x canton-open-source-2.10.2/bin/canton
 
-      - name: Start Canton simple topology example
+      - name: Start Canton sandbox with JSON Ledger API
         shell: bash
-        run: ./canton-open-source-2.10.2/bin/canton -c ./canton-open-source-2.10.2/examples/01-simple-topology/simple-topology.conf --bootstrap ./canton-open-source-2.10.2/examples/01-simple-topology/simple-ping.canton &
+        run: ./canton-open-source-2.10.2/bin/canton sandbox --json-api-port 7575 &
+
+      - name: Wait for JSON Ledger API to be live
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in {1..60}; do
+            if curl -sf http://localhost:7575/livez >/dev/null; then
+              echo "JSON Ledger API livez is OK";
+              break;
+            fi;
+            echo "Waiting for JSON Ledger API (attempt $i) ...";
+            sleep 2;
+          done
+          curl -sS http://localhost:7575/livez | sed -e 's/.*/livez: &/'
+
+      - name: Show OpenAPI and ledger end
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "OpenAPI (first 20 lines):"
+          curl -sS http://localhost:7575/docs/openapi | head -n 20 || true
+          echo
+          echo "Ledger end:"
+          curl -sS -H "Content-Type: application/json" http://localhost:7575/v2/state/ledger-end || true
 
       - name: Cleanup
         run: kill $(jobs -p) || true
